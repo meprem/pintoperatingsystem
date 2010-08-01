@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 use tests::tests;
-check_expected (IGNORE_USER_FAULTS => 1, [<<'EOF']);
+check_expected ( [<<'EOF']);
 (mmap-inherit) begin
 (mmap-inherit) open "sample.txt"
 (mmap-inherit) mmap "sample.txt"

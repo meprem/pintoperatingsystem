@@ -2,7 +2,6 @@
 #include <debug.h>
 #include <stddef.h>
 #include "userprog/gdt.h"
-#include "threads/thread.h"
 #include "threads/palloc.h"
 #include "threads/vaddr.h"
 
@@ -83,9 +82,9 @@ tss_init (void)
      few fields of it are ever referenced, and those are the only
      ones we initialize. */
   tss = palloc_get_page (PAL_ASSERT | PAL_ZERO);
+  tss->esp0 = ptov(0x20000);
   tss->ss0 = SEL_KDSEG;
   tss->bitmap = 0xdfff;
-  tss_update ();
 }
 
 /* Returns the kernel TSS. */
@@ -96,11 +95,10 @@ tss_get (void)
   return tss;
 }
 
-/* Sets the ring 0 stack pointer in the TSS to point to the end
-   of the thread stack. */
+/* Sets the ring 0 stack pointer in the TSS to ESP0. */
 void
-tss_update (void) 
+tss_set_esp0 (uint8_t *esp0) 
 {
   ASSERT (tss != NULL);
-  tss->esp0 = (uint8_t *) thread_current () + PGSIZE;
+  tss->esp0 = esp0;
 }

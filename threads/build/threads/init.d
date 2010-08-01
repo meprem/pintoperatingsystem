@@ -5,7 +5,7 @@ threads/init.o: ../../threads/init.c ../../threads/init.h \
   ../../lib/kernel/stdio.h ../../lib/stdlib.h ../../lib/string.h \
   ../../devices/kbd.h ../../devices/input.h ../../devices/serial.h \
   ../../devices/timer.h ../../lib/round.h ../../devices/vga.h \
-  ../../devices/rtc.h ../../threads/interrupt.h ../../threads/io.h \
-  ../../threads/loader.h ../../threads/malloc.h ../../threads/palloc.h \
-  ../../threads/pte.h ../../threads/vaddr.h ../../threads/thread.h \
-  ../../lib/kernel/list.h ../../tests/threads/tests.h
+  ../../threads/interrupt.h ../../threads/io.h ../../threads/loader.h \
+  ../../threads/malloc.h ../../threads/palloc.h ../../threads/pte.h \
+  ../../threads/vaddr.h ../../threads/thread.h ../../lib/kernel/list.h \
+  ../../tests/threads/tests.h

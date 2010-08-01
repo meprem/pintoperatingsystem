@@ -10,9 +10,6 @@ sub pass;
 die if @ARGV != 2;
 our ($test, $src_dir) = @ARGV;
 
-my ($msg_file) = tempfile ();
-select ($msg_file);
-
 our (@prereq_tests) = ();
 if ($test =~ /^(.*)-persistence$/) {
     push (@prereq_tests, $1);
@@ -22,6 +19,8 @@ for my $prereq_test (@prereq_tests) {
     fail "Prerequisite test $prereq_test failed.\n" if $result[0] ne 'PASS';
 }
 
+my ($msg_file) = tempfile ();
+select ($msg_file);
 
 # Generic testing.
 
@@ -561,15 +560,12 @@ sub read_tar {
 	$size = 0 if $typeflag eq '5';
 
 	# Store content.
-	$name =~ s%^(/|\./|\.\./)*%%;	# Strip leading "/", "./", "../".
-	$name = '' if $name eq '.' || $name eq '..';
 	if (exists $content{$name}) {
 	    fail "$archive: contains multiple entries for $name\n";
 	}
 	if ($typeflag eq '5') {
-	    $content{$name} = 'directory' if $name ne '';
+	    $content{$name} = 'directory';
 	} else {
-	    fail "$archive: contains file with empty name\n" if $name eq '';
 	    my ($position) = sysseek (ARCHIVE, 0, SEEK_CUR);
 	    $content{$name} = [$archive, $position, $size];
 	    sysseek (ARCHIVE, int (($size + 511) / 512) * 512, SEEK_CUR);

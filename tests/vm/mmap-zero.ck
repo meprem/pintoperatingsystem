@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 use tests::tests;
-check_expected (IGNORE_USER_FAULTS => 1, [<<'EOF']);
+check_expected ([<<'EOF']);
 (mmap-zero) begin
 (mmap-zero) create empty file "empty"
 (mmap-zero) open "empty"

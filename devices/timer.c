@@ -17,45 +17,6 @@
 #error TIMER_FREQ <= 1000 recommended
 #endif
 
-/*
-The global variable jiffies holds the number of ticks that have occurred since the system booted. On boot, the kernel initializes the variable to zero, and it is incremented by one during each timer interrupt. Thus, because there are HZ timer interrupts in a second, there are HZ jiffies in a second. The system uptime is therefore jiffies/HZ seconds.
-
-The Etymology of the Jiffy
-
-The origin of the term jiffy is unknown. Phrases such as in a jiffy are thought to originate from eighteenth-century England. In lay terms, jiffy refers to an indeterminate but very brief period of time.
-
-In scientific applications, jiffy represents various intervals of time, most commonly 10ms. In physics, a jiffy is sometimes used to refer to the time it takes for light to travel some specific distance (usually a foot or a centimeter or across a nucleon).
-
-In computer engineering, a jiffy is often the time between two successive clock cycles. In electrical engineering, a jiffy is the time to complete one AC (alternating current) cycle. In the United States, this is 1/60 of a second.
-
-In operating systems, especially Unix, a jiffy is the time between two successive clock ticks. Historically, this has been 10ms. As we have seen in this chapter, however, a jiffy in Linux can have various values.
-
-The jiffies variable is declared in <linux/jiffies.h> as
-
-extern unsigned long volatile jiffies;
-
-
-In the next section, we will look at its actual definition, which is a bit peculiar. For now, let's look at some sample kernel code. The following code converts from seconds to a unit of jiffies:
-
-(seconds * HZ)
-
-
-Likewise, this code converts from jiffies to seconds:
-
-(jiffies / HZ)
-
-The jiffies variable has always been an unsigned long, and therefore 32 bits in size on 32-bit architectures and 64-bits on 64-bit architectures. With a tick rate of 100, a 32-bit jiffies variable would overflow in about 497 days. With HZ increased to 1000, however, that overflow now occurs in just 49.7 days! If jiffies were stored in a 64-bit variable on all architectures, then for any reasonable HZ value the jiffies variable would never overflow in anyone's lifetime.
-
-
-
-
-Don’t worry about the possibility of timer values overflowing. Timer values are
-expressed as signed 64-bit numbers, which at 100 ticks per second should be
-good for almost 2,924,712,087 years. By then, we expect Pintos to have been
-phased out of the CS 3204 curriculum.
-
-*/
-
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
 
@@ -67,7 +28,6 @@ static intr_handler_func timer_interrupt;
 static bool too_many_loops (unsigned loops);
 static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
-static void real_time_delay (int64_t num, int32_t denom);
 
 /* Sets up the 8254 Programmable Interval Timer (PIT) to
    interrupt PIT_FREQ times per second, and registers the
@@ -132,8 +92,7 @@ timer_elapsed (int64_t then)
   return timer_ticks () - then;
 }
 
-/* Sleeps for approximately TICKS timer ticks.  Interrupts must
-   be turned on. */
+/* Suspends execution for approximately TICKS timer ticks. */
 void
 timer_sleep (int64_t ticks) 
 {
@@ -144,67 +103,25 @@ timer_sleep (int64_t ticks)
     thread_yield ();
 }
 
-/* Sleeps for approximately MS milliseconds.  Interrupts must be
-   turned on. */
+/* Suspends execution for approximately MS milliseconds. */
 void
 timer_msleep (int64_t ms) 
 {
   real_time_sleep (ms, 1000);
 }
 
-/* Sleeps for approximately US microseconds.  Interrupts must be
-   turned on. */
+/* Suspends execution for approximately US microseconds. */
 void
 timer_usleep (int64_t us) 
 {
   real_time_sleep (us, 1000 * 1000);
 }
 
-/* Sleeps for approximately NS nanoseconds.  Interrupts must be
-   turned on. */
+/* Suspends execution for approximately NS nanoseconds. */
 void
 timer_nsleep (int64_t ns) 
 {
   real_time_sleep (ns, 1000 * 1000 * 1000);
-}
-
-/* Busy-waits for approximately MS milliseconds.  Interrupts need
-   not be turned on.
-
-   Busy waiting wastes CPU cycles, and busy waiting with
-   interrupts off for the interval between timer ticks or longer
-   will cause timer ticks to be lost.  Thus, use timer_msleep()
-   instead if interrupts are enabled. */
-void
-timer_mdelay (int64_t ms) 
-{
-  real_time_delay (ms, 1000);
-}
-
-/* Sleeps for approximately US microseconds.  Interrupts need not
-   be turned on.
-
-   Busy waiting wastes CPU cycles, and busy waiting with
-   interrupts off for the interval between timer ticks or longer
-   will cause timer ticks to be lost.  Thus, use timer_usleep()
-   instead if interrupts are enabled. */
-void
-timer_udelay (int64_t us) 
-{
-  real_time_delay (us, 1000 * 1000);
-}
-
-/* Sleeps execution for approximately NS nanoseconds.  Interrupts
-   need not be turned on.
-
-   Busy waiting wastes CPU cycles, and busy waiting with
-   interrupts off for the interval between timer ticks or longer
-   will cause timer ticks to be lost.  Thus, use timer_nsleep()
-   instead if interrupts are enabled.*/
-void
-timer_ndelay (int64_t ns) 
-{
-  real_time_delay (ns, 1000 * 1000 * 1000);
 }
 
 /* Prints timer statistics. */
@@ -278,17 +195,10 @@ real_time_sleep (int64_t num, int32_t denom)
   else 
     {
       /* Otherwise, use a busy-wait loop for more accurate
-         sub-tick timing. */
-      real_time_delay (num, denom); 
+         sub-tick timing.  We scale the numerator and denominator
+         down by 1000 to avoid the possibility of overflow. */
+      ASSERT (denom % 1000 == 0);
+      busy_wait (loops_per_tick * num / 1000 * TIMER_FREQ / (denom / 1000)); 
     }
 }
 
-/* Busy-wait for approximately NUM/DENOM seconds. */
-static void
-real_time_delay (int64_t num, int32_t denom)
-{
-  /* Scale the numerator and denominator down by 1000 to avoid
-     the possibility of overflow. */
-  ASSERT (denom % 1000 == 0);
-  busy_wait (loops_per_tick * num / 1000 * TIMER_FREQ / (denom / 1000)); 
-}
